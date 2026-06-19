@@ -437,20 +437,59 @@ input[type="range"]::-webkit-slider-runnable-track {
     background-size: 20px 20px, 100px 100px;
 }
 
+/* Zoom Controls */
+.zoom-controls {
+    position: fixed;
+    bottom: 2.5rem;
+    right: 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: rgba(24, 24, 37, 0.85);
+    backdrop-filter: var(--blur-md);
+    -webkit-backdrop-filter: var(--blur-md);
+    padding: 0.5rem;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    z-index: 50;
+    transition: all 0.3s ease;
+}
+
+.zoom-controls button {
+    padding: 0.5rem;
+    border-radius: var(--radius-md);
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+}
+
+.zoom-controls button:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.zoom-controls span {
+    min-width: 3.5rem;
+    text-align: center;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
 .preview-container {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     gap: 3rem;
     min-height: 100%;
     width: 100%;
     perspective: 1000px;
-    padding-bottom: 3rem;
+    padding: 3rem 0;
 }
 
 .page-preview {
-    background-color: #1e1e2e; /* Base */
-    background-image: linear-gradient(135deg, rgba(255,255,255,0.03), transparent);
+    background-color: white; /* Changed back to white to represent paper */
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255,255,255,0.05);
     display: grid;
     position: relative;
@@ -459,10 +498,13 @@ input[type="range"]::-webkit-slider-runnable-track {
                 padding 0.4s ease;
     border-radius: 2px;
     flex-shrink: 0;
-    
-    /* Default size matching US Letter at 0.5 scale (408px x 528px) */
     width: 408px;
     height: 528px;
+}
+
+.page-preview.empty-state {
+    background-color: #1e1e2e; /* Base */
+    background-image: linear-gradient(135deg, rgba(255,255,255,0.03), transparent);
 }
 
 .placeholder-text {
@@ -489,8 +531,6 @@ input[type="range"]::-webkit-slider-runnable-track {
     display: flex;
     justify-content: center;
     align-items: center;
-    opacity: 0;
-    animation: fadeIn 0.5s forwards;
     border-radius: 2px;
     position: relative;
     box-sizing: border-box;
@@ -499,11 +539,6 @@ input[type="range"]::-webkit-slider-runnable-track {
 .cut-marks .preview-image-container,
 .cut-marks .print-image-container {
     border: 1px dashed rgba(0, 0, 0, 0.3);
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: scale(0.95); }
-    to { opacity: 1; transform: scale(1); }
 }
 
 .preview-image-container img {
