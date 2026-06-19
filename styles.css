@@ -610,5 +610,54 @@ input[type="range"]::-webkit-slider-runnable-track {
         width: 100%;
         height: 100%;
         object-position: center;
+}
+
+/* --- Mobile Responsive Styles --- */
+@media (max-width: 800px) {
+    body {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .sidebar {
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .preview-area {
+        height: auto;
+        min-height: 70vh;
+        overflow: visible;
+    }
+
+    .preview-container {
+        padding: 2rem 0;
+    }
+
+    .controls.active {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+        align-items: end;
+    }
+
+    .control-group {
+        margin-bottom: 0;
+    }
+
+    .control-group:last-child {
+        grid-column: 1 / -1; /* Print button spans both columns */
+    }
+
+    .zoom-controls {
+        bottom: 1.5rem;
+        right: 1.5rem;
+        padding: 0.4rem;
+    }
+
+    .zoom-controls button {
+        padding: 0.4rem;
     }
 }
