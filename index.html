@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Print Formatter</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Decorative Background Orbs -->
+    <div class="bg-orb orb-1 no-print"></div>
+    <div class="bg-orb orb-2 no-print"></div>
+    <div class="bg-orb orb-3 no-print"></div>
+
+    <div class="app-container">
+        <aside class="sidebar no-print">
+            <header>
+                <h1>Print Formatter</h1>
+                <p>Upload and format your images for printing.</p>
+            </header>
+
+            <div class="upload-section">
+                <div id="dropzone" class="dropzone">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <p>Drag & drop image(s) here</p>
+                    <span>or</span>
+                    <label for="file-upload" class="btn-secondary">Browse Files</label>
+                    <input type="file" id="file-upload" accept="image/png, image/jpeg, image/webp" hidden multiple>
+                </div>
+            </div>
+
+            <div class="controls" id="controls">
+                <button id="clear-btn" class="btn-secondary" style="margin-bottom: 1rem; width: 100%;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                    Clear Images
+                </button>
+                <div class="control-group">
+                    <label for="images-per-page">Images per Page</label>
+                    <select id="images-per-page">
+                        <option value="1">1 (Full Page)</option>
+                        <option value="2" selected>2 per page</option>
+                        <option value="3">3 per page</option>
+                        <option value="4">4 per page</option>
+                        <option value="6">6 per page</option>
+                        <option value="8">8 per page</option>
+                        <option value="9">9 per page</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="paper-size">Paper Size</label>
+                    <select id="paper-size">
+                        <option value="letter">US Letter (8.5" x 11")</option>
+                        <option value="a4">A4 (210 x 297 mm)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="orientation">Orientation</label>
+                    <div class="segmented-control">
+                        <input type="radio" id="portrait" name="orientation" value="portrait" checked>
+                        <label for="portrait">Portrait</label>
+                        <input type="radio" id="landscape" name="orientation" value="landscape">
+                        <label for="landscape">Landscape</label>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="fit-mode">Image Fit</label>
+                    <div class="segmented-control">
+                        <input type="radio" id="contain" name="fit-mode" value="contain" checked>
+                        <label for="contain">Contain</label>
+                        <input type="radio" id="cover" name="fit-mode" value="cover">
+                        <label for="cover">Cover</label>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="gap">Gap Between Images</label>
+                    <input type="range" id="gap" min="0" max="50" value="10">
+                    <div class="range-labels">
+                        <span>None</span>
+                        <span>Large</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label for="margin">Page Margins</label>
+                    <input type="range" id="margin" min="0" max="50" value="20">
+                    <div class="range-labels">
+                        <span>None</span>
+                        <span>Large</span>
+                    </div>
+                </div>
+
+                <div class="control-group" style="flex-direction: row; align-items: center; justify-content: space-between;">
+                    <label for="cut-marks" style="margin-bottom: 0; cursor: pointer;">Show Cut Marks</label>
+                    <input type="checkbox" id="cut-marks" class="toggle-checkbox" checked>
+                </div>
+
+                <button id="print-btn" class="btn-primary" disabled>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                        <rect x="6" y="14" width="12" height="8"></rect>
+                    </svg>
+                    Print Document
+                </button>
+            </div>
+        </aside>
+
+        <main class="preview-area no-print">
+            <div class="preview-container" id="preview-container">
+                <div class="page-preview" id="initial-preview">
+                    <!-- Images will be injected here -->
+                    <div class="placeholder-text" id="placeholder-ui">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--accent-color)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 4px 12px var(--accent-glow)); margin-bottom: 0.5rem;">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                        <span style="color: var(--text-primary); font-weight: 600; font-size: 1.25rem;">Awaiting your image</span>
+                        <span style="font-size: 0.875rem; color: var(--text-secondary);">Preview will appear here</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Actual Print Content (hidden on screen, visible on print) -->
+        <div class="print-only" id="print-container">
+            <!-- Print layout generated via JS -->
+        </div>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
