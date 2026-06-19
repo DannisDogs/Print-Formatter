@@ -9,6 +9,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const printBtn = document.getElementById('print-btn');
     const initialPreview = document.getElementById('initial-preview');
     const placeholderUI = document.getElementById('placeholder-ui');
+    const zoomControls = document.getElementById('zoom-controls');
+    const zoomInBtn = document.getElementById('zoom-in');
+    const zoomOutBtn = document.getElementById('zoom-out');
+    const zoomLevelText = document.getElementById('zoom-level');
     
     // Inputs
     const imagesPerPageSelect = document.getElementById('images-per-page');
@@ -20,7 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const cutMarksToggle = document.getElementById('cut-marks');
 
     // State
-    let uploadedImages = []; // Array of { src: string, name: string, transform: { x: 0, y: 0 } }
+    let uploadedImages = []; // Array of { src: string, name: string }
+    let currentLayoutTransforms = []; // Preserved pan state across re-renders
     let config = {
         imagesPerPage: 2,
         paperSize: 'letter', 
@@ -31,12 +36,44 @@ document.addEventListener('DOMContentLoaded', () => {
         cutMarks: true
     };
 
-    // Paper dimensions (roughly 96 DPI scaled down for screen)
-    const PREVIEW_SCALE = 0.5;
+    // Paper dimensions (roughly 96 DPI)
     const PAPER_DIMENSIONS = {
         letter: { width: 8.5 * 96, height: 11 * 96 },
         a4: { width: 8.27 * 96, height: 11.69 * 96 }
     };
+
+    function calculateFitScale() {
+        const area = document.querySelector('.preview-area');
+        // Subtract 80px to leave breathing room around the edges
+        const availableWidth = area.clientWidth - 80; 
+        const availableHeight = area.clientHeight - 80;
+
+        let paperW = PAPER_DIMENSIONS[config.paperSize].width;
+        let paperH = PAPER_DIMENSIONS[config.paperSize].height;
+
+        if (config.orientation === 'landscape') {
+            [paperW, paperH] = [paperH, paperW];
+        }
+
+        const scaleX = availableWidth / paperW;
+        const scaleY = availableHeight / paperH;
+        
+        let scale = Math.min(scaleX, scaleY);
+        if (scale > 2) scale = 2;
+        if (scale < 0.2) scale = 0.2;
+        return scale;
+    }
+
+    let PREVIEW_SCALE = calculateFitScale();
+    let hasManuallyZoomed = false;
+
+    window.addEventListener('resize', () => {
+        if (!hasManuallyZoomed && uploadedImages.length > 0) {
+            PREVIEW_SCALE = calculateFitScale();
+            updateZoomDisplay();
+            updatePreview();
+        }
+    });
 
     // --- Drag & Drop Handlers ---
     
@@ -66,22 +103,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     clearBtn.addEventListener('click', () => {
         uploadedImages = [];
+        currentLayoutTransforms = [];
         fileInput.value = '';
         controls.classList.remove('active');
         printBtn.disabled = true;
+        zoomControls.style.display = 'none';
         
         // Reset preview area
         previewContainer.innerHTML = '';
         previewContainer.appendChild(initialPreview);
         initialPreview.innerHTML = '';
         initialPreview.appendChild(placeholderUI);
-        initialPreview.style.width = '';
-        initialPreview.style.height = '';
+        
+        // Size the empty state to match the auto-calculated scale
+        let paperW = PAPER_DIMENSIONS[config.paperSize].width;
+        let paperH = PAPER_DIMENSIONS[config.paperSize].height;
+        if (config.orientation === 'landscape') {
+            [paperW, paperH] = [paperH, paperW];
+        }
+        
+        initialPreview.style.width = (paperW * PREVIEW_SCALE) + 'px';
+        initialPreview.style.height = (paperH * PREVIEW_SCALE) + 'px';
         initialPreview.style.gridTemplateColumns = '';
         initialPreview.style.gridTemplateRows = '';
         initialPreview.style.gap = '';
         initialPreview.style.padding = '';
-        initialPreview.className = 'page-preview';
+        initialPreview.className = 'page-preview empty-state';
     });
 
     function handleFiles(files) {
@@ -95,14 +142,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         controls.classList.add('active');
         printBtn.disabled = false;
+        zoomControls.style.display = 'flex';
 
         validFiles.forEach(file => {
             const reader = new FileReader();
             reader.onload = (e) => {
                 uploadedImages.push({
                     src: e.target.result,
-                    name: file.name,
-                    transform: { x: 0, y: 0 } // For panning
+                    name: file.name
                 });
                 filesProcessed++;
                 
@@ -124,6 +171,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateConfig() {
+        const oldImagesPerPage = config.imagesPerPage;
+        
         config.imagesPerPage = parseInt(imagesPerPageSelect.value);
         config.paperSize = paperSizeSelect.value;
         config.orientation = getSelectedValue(orientationInputs);
@@ -132,9 +181,14 @@ document.addEventListener('DOMContentLoaded', () => {
         config.margin = parseInt(marginInput.value);
         config.cutMarks = cutMarksToggle.checked;
         
-        // Reset transforms when fit mode changes
-        if (config.fitMode === 'contain') {
-            uploadedImages.forEach(img => img.transform = {x: 0, y: 0});
+        // Reset transforms when fit mode or counts change
+        if (config.fitMode === 'contain' || config.imagesPerPage !== oldImagesPerPage) {
+            currentLayoutTransforms = [];
+        }
+        
+        if (!hasManuallyZoomed) {
+            PREVIEW_SCALE = calculateFitScale();
+            updateZoomDisplay();
         }
         
         updatePreview();
@@ -235,8 +289,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const currentTx = parseFloat(draggedImgElement.dataset.tx) || 0;
             const currentTy = parseFloat(draggedImgElement.dataset.ty) || 0;
             
-            draggedImgElement.dataset.tx = currentTx + dx;
-            draggedImgElement.dataset.ty = currentTy + dy;
+            const finalTx = currentTx + dx;
+            const finalTy = currentTy + dy;
+            
+            draggedImgElement.dataset.tx = finalTx;
+            draggedImgElement.dataset.ty = finalTy;
+            
+            // Save to global state so it survives layout regenerations
+            const imgIndex = parseInt(draggedImgElement.dataset.index);
+            if (currentLayoutTransforms[imgIndex]) {
+                currentLayoutTransforms[imgIndex].x = finalTx;
+                currentLayoutTransforms[imgIndex].y = finalTy;
+            }
             
             draggedImgElement.style.transition = 'transform 0.3s ease, width 0.3s, height 0.3s';
             
@@ -246,6 +310,38 @@ document.addEventListener('DOMContentLoaded', () => {
         draggedImgElement = null;
     });
 
+    // --- Zoom Logic ---
+
+    function updateZoomDisplay() {
+        zoomLevelText.textContent = Math.round(PREVIEW_SCALE * 100) + '%'; 
+    }
+
+    function changeZoom(delta) {
+        if (uploadedImages.length === 0) return;
+        hasManuallyZoomed = true;
+        
+        const oldScale = PREVIEW_SCALE;
+        let newScale = PREVIEW_SCALE + delta;
+        
+        // Clamp scale between roughly 10% and 300%
+        if (newScale < 0.1) newScale = 0.1;
+        if (newScale > 3.0) newScale = 3.0;
+        
+        const ratio = newScale / oldScale;
+        
+        // Scale existing transforms to visually stay in the same crop spot
+        currentLayoutTransforms.forEach(t => {
+            t.x *= ratio;
+            t.y *= ratio;
+        });
+
+        PREVIEW_SCALE = newScale;
+        updateZoomDisplay();
+        updatePreview();
+    }
+
+    zoomInBtn.addEventListener('click', () => changeZoom(0.1));
+    zoomOutBtn.addEventListener('click', () => changeZoom(-0.1));
 
     // --- Preview Generation ---
 
@@ -283,6 +379,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const layoutImages = getImagesForLayout();
         const pagesNeeded = Math.ceil(layoutImages.length / config.imagesPerPage);
         
+        // Sync transforms array size
+        if (currentLayoutTransforms.length !== layoutImages.length) {
+            currentLayoutTransforms = layoutImages.map(() => ({ x: 0, y: 0 }));
+        }
+        
         let imgIndex = 0;
 
         for (let p = 0; p < pagesNeeded; p++) {
@@ -301,8 +402,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // Setup panning attributes
                     img.dataset.index = imgIndex;
-                    img.dataset.tx = imgData.transform.x || 0;
-                    img.dataset.ty = imgData.transform.y || 0;
+                    img.dataset.tx = currentLayoutTransforms[imgIndex].x || 0;
+                    img.dataset.ty = currentLayoutTransforms[imgIndex].y || 0;
                     
                     if (config.fitMode === 'cover') {
                         img.style.transform = `translate(${img.dataset.tx}px, ${img.dataset.ty}px) scale(1.1)`;
