@@ -120,8 +120,23 @@
         </aside>
 
         <main class="preview-area no-print">
+            <div class="zoom-controls" id="zoom-controls" style="display: none;">
+                <button id="zoom-out" class="btn-secondary" title="Zoom Out">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </button>
+                <span id="zoom-level">50%</span>
+                <button id="zoom-in" class="btn-secondary" title="Zoom In">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </button>
+            </div>
+            
             <div class="preview-container" id="preview-container">
-                <div class="page-preview" id="initial-preview">
+                <div class="page-preview empty-state" id="initial-preview">
                     <!-- Images will be injected here -->
                     <div class="placeholder-text" id="placeholder-ui">
                         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--accent-color)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" style="filter: drop-shadow(0 4px 12px var(--accent-glow)); margin-bottom: 0.5rem;">
