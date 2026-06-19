@@ -237,78 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Panning Logic ---
-    let isDragging = false;
-    let dragStart = { x: 0, y: 0 };
-    let currentImageIndex = null;
-    let draggedImgElement = null;
 
-    function setupPanning(imgElement, imgDataObj, isPrint = false) {
-        if (config.fitMode !== 'cover' || isPrint) return;
-
-        // Using data attributes or closures to update the shared imgDataObj transform
-        imgElement.style.transform = `translate(${imgDataObj.transform.x}px, ${imgDataObj.transform.y}px) scale(1.1)`; // slightly scale up to avoid edges showing immediately when panning
-        
-        imgElement.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            dragStart = { x: e.clientX, y: e.clientY };
-            draggedImgElement = imgElement;
-            imgElement.style.transition = 'none'; // disable transition while dragging
-        });
-
-        // The move and up listeners need to be on window to prevent glitches
-        // but we'll manage it simply here
-    }
-
-    window.addEventListener('mousemove', (e) => {
-        if (!isDragging || !draggedImgElement) return;
-        
-        const dx = e.clientX - dragStart.x;
-        const dy = e.clientY - dragStart.y;
-        
-        // Find the data object tied to this image
-        const imgIndex = parseInt(draggedImgElement.dataset.index);
-        // Note: For panning, since we generate multiple pages and recreate DOM, 
-        // we'll update the inline style directly during drag, and save state on mouseup.
-        
-        const currentTx = parseFloat(draggedImgElement.dataset.tx) || 0;
-        const currentTy = parseFloat(draggedImgElement.dataset.ty) || 0;
-        
-        const newTx = currentTx + dx;
-        const newTy = currentTy + dy;
-        
-        draggedImgElement.style.transform = `translate(${newTx}px, ${newTy}px) scale(1.1)`;
-    });
-
-    window.addEventListener('mouseup', (e) => {
-        if (isDragging && draggedImgElement) {
-            isDragging = false;
-            
-            const dx = e.clientX - dragStart.x;
-            const dy = e.clientY - dragStart.y;
-            
-            const currentTx = parseFloat(draggedImgElement.dataset.tx) || 0;
-            const currentTy = parseFloat(draggedImgElement.dataset.ty) || 0;
-            
-            const finalTx = currentTx + dx;
-            const finalTy = currentTy + dy;
-            
-            draggedImgElement.dataset.tx = finalTx;
-            draggedImgElement.dataset.ty = finalTy;
-            
-            // Save to global state so it survives layout regenerations
-            const imgIndex = parseInt(draggedImgElement.dataset.index);
-            if (currentLayoutTransforms[imgIndex]) {
-                currentLayoutTransforms[imgIndex].x = finalTx;
-                currentLayoutTransforms[imgIndex].y = finalTy;
-            }
-            
-            draggedImgElement.style.transition = 'transform 0.3s ease, width 0.3s, height 0.3s';
-            
-            // Sync to the print layout (re-generate)
-            generatePrintLayout();
-        }
-        draggedImgElement = null;
-    });
 
     // --- Zoom Logic ---
 
@@ -519,4 +448,93 @@ document.addEventListener('DOMContentLoaded', () => {
         generatePrintLayout();
         window.print();
     });
+
+    // --- Drag & Drop (Panning) Handlers ---
+
+    let isDragging = false;
+    let dragStart = { x: 0, y: 0 };
+    let draggedImgElement = null;
+
+    function getPointerPos(e) {
+        if (e.touches && e.touches.length > 0) {
+            return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        }
+        return { x: e.clientX, y: e.clientY };
+    }
+
+    function handlePointerDown(e) {
+        if (e.target.tagName.toLowerCase() === 'img' && config.fitMode === 'cover') {
+            isDragging = true;
+            draggedImgElement = e.target;
+            const pos = getPointerPos(e);
+            dragStart = { x: pos.x, y: pos.y };
+            draggedImgElement.style.transition = 'none';
+        }
+    }
+
+    function handlePointerMove(e) {
+        if (!isDragging || !draggedImgElement) return;
+        
+        // Prevent scrolling on mobile while panning
+        if (e.type === 'touchmove') {
+            e.preventDefault();
+        }
+        
+        const pos = getPointerPos(e);
+        const dx = pos.x - dragStart.x;
+        const dy = pos.y - dragStart.y;
+        
+        const currentTx = parseFloat(draggedImgElement.dataset.tx) || 0;
+        const currentTy = parseFloat(draggedImgElement.dataset.ty) || 0;
+        
+        draggedImgElement.style.transform = `translate(${currentTx + dx}px, ${currentTy + dy}px) scale(1.1)`;
+    }
+
+    function handlePointerUp(e) {
+        if (isDragging && draggedImgElement) {
+            isDragging = false;
+            
+            // For touchend, e.changedTouches contains the final position
+            let pos;
+            if (e.type === 'touchend' && e.changedTouches && e.changedTouches.length > 0) {
+                pos = { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+            } else {
+                pos = getPointerPos(e);
+            }
+            
+            const dx = pos.x - dragStart.x;
+            const dy = pos.y - dragStart.y;
+            
+            const currentTx = parseFloat(draggedImgElement.dataset.tx) || 0;
+            const currentTy = parseFloat(draggedImgElement.dataset.ty) || 0;
+            
+            const finalTx = currentTx + dx;
+            const finalTy = currentTy + dy;
+            
+            draggedImgElement.dataset.tx = finalTx;
+            draggedImgElement.dataset.ty = finalTy;
+            
+            // Save to global state so it survives layout regenerations
+            const imgIndex = parseInt(draggedImgElement.dataset.index);
+            if (currentLayoutTransforms[imgIndex]) {
+                currentLayoutTransforms[imgIndex].x = finalTx;
+                currentLayoutTransforms[imgIndex].y = finalTy;
+            }
+            
+            draggedImgElement.style.transition = 'transform 0.3s ease, width 0.3s, height 0.3s';
+            
+            // Sync to the print layout (re-generate)
+            generatePrintLayout();
+        }
+        draggedImgElement = null;
+    }
+
+    previewContainer.addEventListener('mousedown', handlePointerDown);
+    previewContainer.addEventListener('touchstart', handlePointerDown, { passive: false });
+
+    window.addEventListener('mousemove', handlePointerMove);
+    window.addEventListener('touchmove', handlePointerMove, { passive: false });
+
+    window.addEventListener('mouseup', handlePointerUp);
+    window.addEventListener('touchend', handlePointerUp);
 });
