@@ -615,8 +615,13 @@ input[type="range"]::-webkit-slider-runnable-track {
 /* --- Mobile Responsive Styles --- */
 @media (max-width: 800px) {
     body {
-        flex-direction: column;
         overflow-y: auto;
+    }
+
+    .app-container {
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
     }
 
     .sidebar {
