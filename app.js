@@ -22,6 +22,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const gapInput = document.getElementById('gap');
     const marginInput = document.getElementById('margin');
     const cutMarksToggle = document.getElementById('cut-marks');
+    
+    const sidebarToggle = document.getElementById('sidebar-toggle');
+    const sidebarHeader = document.getElementById('sidebar-header');
+    const sidebar = document.querySelector('.sidebar');
 
     // State
     let uploadedImages = []; // Array of { src: string, name: string }
@@ -202,6 +206,26 @@ document.addEventListener('DOMContentLoaded', () => {
     
     orientationInputs.forEach(input => { input.addEventListener('change', updateConfig); });
     fitModeInputs.forEach(input => { input.addEventListener('change', updateConfig); });
+
+    // --- Sidebar Collapse Logic ---
+    function toggleSidebar() {
+        sidebar.classList.toggle('collapsed');
+        
+        // Recalculate auto-fit scale since the preview area size might have changed
+        if (!hasManuallyZoomed && uploadedImages.length > 0) {
+            // Slight delay to allow layout to settle after display: none
+            setTimeout(() => {
+                PREVIEW_SCALE = calculateFitScale();
+                updateZoomDisplay();
+                updatePreview();
+            }, 10);
+        }
+    }
+
+    sidebarToggle.addEventListener('click', toggleSidebar);
+    sidebarHeader.addEventListener('click', (e) => {
+        if (!e.target.closest('#sidebar-toggle')) toggleSidebar();
+    });
 
     // --- Layout Calculation ---
 
