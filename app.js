@@ -23,9 +23,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const marginInput = document.getElementById('margin');
     const cutMarksToggle = document.getElementById('cut-marks');
     
-    const sidebarToggle = document.getElementById('sidebar-toggle');
-    const sidebarHeader = document.getElementById('sidebar-header');
-    const sidebar = document.querySelector('.sidebar');
 
     // State
     let uploadedImages = []; // Array of { src: string, name: string }
@@ -206,6 +203,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     orientationInputs.forEach(input => { input.addEventListener('change', updateConfig); });
     fitModeInputs.forEach(input => { input.addEventListener('change', updateConfig); });
+    const openSidebarBtn = document.getElementById('open-sidebar');
+    const closeSidebarBtn = document.getElementById('close-sidebar');
+    const sidebar = document.querySelector('.sidebar');
 
     // --- Sidebar Collapse Logic ---
     function toggleSidebar() {
@@ -213,19 +213,17 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Recalculate auto-fit scale since the preview area size might have changed
         if (!hasManuallyZoomed && uploadedImages.length > 0) {
-            // Slight delay to allow layout to settle after display: none
+            // Slight delay to allow layout to settle after display/margin change
             setTimeout(() => {
                 PREVIEW_SCALE = calculateFitScale();
                 updateZoomDisplay();
                 updatePreview();
-            }, 10);
+            }, 300); // 300ms matches the CSS transition time
         }
     }
 
-    sidebarToggle.addEventListener('click', toggleSidebar);
-    sidebarHeader.addEventListener('click', (e) => {
-        if (!e.target.closest('#sidebar-toggle')) toggleSidebar();
-    });
+    openSidebarBtn.addEventListener('click', toggleSidebar);
+    closeSidebarBtn.addEventListener('click', toggleSidebar);
 
     // --- Layout Calculation ---
 
